@@ -38,6 +38,9 @@ class _RaceScreenState extends State<RaceScreen>
   final Random _random = Random();
   late AnimationController _bounceController;
 
+  // NGƯỠNG DỪNG XE: Chạy vọt qua vạch đích một đoạn ngắn rồi mới dừng lại hẳn (0.98)
+  static const double _finishLinePosition = 0.98;
+
   @override
   void initState() {
     super.initState();
@@ -59,7 +62,7 @@ class _RaceScreenState extends State<RaceScreen>
     if (_isRacing || _isFinished) return;
 
     SoundService.playClick();
-    SoundService.playStartHorn(); // Bật bài CombatSong.mp3
+    SoundService.playStartHorn();
 
     setState(() {
       _isRacing = true;
@@ -76,12 +79,13 @@ class _RaceScreenState extends State<RaceScreen>
 
       setState(() {
         for (int i = 0; i < widget.racers.length; i++) {
-          // Tinh chỉnh bước chạy để chặng đua kịch tính tầm 5-6 giây, đủ thời gian nhạc vang lên
-          final double step = _random.nextDouble() * 0.005 + 0.0025;
+          // Tốc độ chạy mượt mà, hồi hộp kéo dài 5-6 giây
+          final double step = _random.nextDouble() * 0.007 + 0.0035;
           _positions[i] += step;
 
-          if (_positions[i] >= 0.82) {
-            _positions[i] = 0.82;
+          // Nhân vật chạy vượt qua vạch đích một đoạn (đạt 0.98) mới phân định chiến thắng
+          if (_positions[i] >= _finishLinePosition) {
+            _positions[i] = _finishLinePosition;
             someoneWon = true;
             winnerIndex = i;
             break;
@@ -93,7 +97,6 @@ class _RaceScreenState extends State<RaceScreen>
         timer.cancel();
         _isRacing = false;
         _isFinished = true;
-        // Giữ nhạc combat tiếp tục ngân vang đến khi đổi màn hình
         _onRaceFinish(widget.racers[winnerIndex]);
       }
     });
@@ -102,8 +105,7 @@ class _RaceScreenState extends State<RaceScreen>
   void _onRaceFinish(Racer winner) {
     Future.delayed(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
-      SoundService
-          .stopCombat(); // Dừng riêng kênh Combat trước khi mở ResultScreen
+      SoundService.stopCombat();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -121,7 +123,7 @@ class _RaceScreenState extends State<RaceScreen>
 
   void _onBackToBetting() {
     SoundService.playClick();
-    SoundService.stopCombat(); // Dừng nhạc Combat khi hủy chặng đua quay lại
+    SoundService.stopCombat();
     _raceTimer?.cancel();
 
     int refundTotal = 0;
@@ -257,6 +259,11 @@ class _RaceScreenState extends State<RaceScreen>
                     final bool hasBet =
                         bet != null && bet.isSelected && bet.amount > 0;
 
+                    // Tiến độ phần trăm chuẩn
+                    final int percent = ((progress / _finishLinePosition) * 100)
+                        .clamp(0, 100)
+                        .toInt();
+
                     return Expanded(
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -276,17 +283,19 @@ class _RaceScreenState extends State<RaceScreen>
                           ],
                         ),
                         child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
                             // NỀN VÁCH ĐÁ & CỎ RÊU 2.5D
                             const Positioned.fill(
                               child: IslandTrackFloor(),
                             ),
 
-                            // KHÁN GIẢ CHIẾN BINH WARRIOR ĐỨNG DỌC THEO BỜ LÀN
+                            // KHÁN GIẢ CHIẾN BINH WARRIOR
                             Positioned(
                               top: 2,
                               left: 65,
-                              right: 35,
+                              right:
+                                  90, // Thu gọn khán giả để chừa vạch đích thoáng mắt
                               child: AnimatedBuilder(
                                 animation: _bounceController,
                                 builder: (context, child) {
@@ -305,7 +314,7 @@ class _RaceScreenState extends State<RaceScreen>
                                       return Transform.translate(
                                         offset: Offset(0, -jump),
                                         child: WarriorSpectator(
-                                          size: 38.0, // Chống tràn viền
+                                          size: 38.0,
                                           flipX: specIdx % 2 == 1,
                                         ),
                                       );
@@ -324,7 +333,7 @@ class _RaceScreenState extends State<RaceScreen>
                                     horizontal: 6, vertical: 2),
                                 color: Colors.black87,
                                 child: Text(
-                                  "${racer.name} - ${(progress / 0.82 * 100).toInt()}%",
+                                  "${racer.name} - $percent%",
                                   style: TextStyle(
                                     color: racer.color,
                                     fontSize: 10,
@@ -334,14 +343,43 @@ class _RaceScreenState extends State<RaceScreen>
                               ),
                             ),
 
-                            // CỜ VẠCH ĐÍCH
+                            // VẠCH KẺ ĐÍCH SỌC ĐỎ - VÀNG CÁCH MÉP PHẢI 1 KHOẢNG (right: 75)
                             Positioned(
-                              right: 28,
-                              top: 20,
-                              bottom: 24,
+                              right: 75,
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 3,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.redAccent,
+                                      DarkFantasyTheme.gold,
+                                      Colors.redAccent,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.6),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // CỜ VẠCH ĐÍCH (GARGOYLE) ĐẶT NGAY TRÊN VẠCH KẺ ĐÍCH
+                            Positioned(
+                              right: 62,
+                              top: 10,
+                              bottom: 14,
                               child: Image.asset(
                                 'assets/images/fan_gargoyle.png',
-                                width: 28,
+                                width: 30,
                                 fit: BoxFit.contain,
                                 errorBuilder: (c, e, s) => const Icon(
                                   Icons.sports_score,
@@ -351,7 +389,7 @@ class _RaceScreenState extends State<RaceScreen>
                               ),
                             ),
 
-                            // ĐẤU SĨ + BÓNG ĐỔ DẸT RÕ NÉT
+                            // ĐẤU SĨ: CHẠY QUA CỜ (right: 62) VÀ LAO THẲNG VỀ GÓC PHẢI
                             Align(
                               alignment: FractionalOffset(progress, 0.62),
                               child: SizedBox(
@@ -377,7 +415,7 @@ class _RaceScreenState extends State<RaceScreen>
                                       ),
                                     ),
 
-                                    // Sprite nhân vật: Chưa đua đứng yên ở Frame 1, đua mới chạy
+                                    // Sprite nhân vật
                                     Positioned(
                                       bottom: 6,
                                       child: ControllableGifRacer(
