@@ -1,0 +1,37 @@
+name: project_mini_game_racing
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  audioplayers: ^6.1.0
+  google_fonts: ^8.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/audio/
+    - assets/images/
+    - assets/images/racer_1.gif
+    - assets/images/racer_2.gif
+    - assets/images/racer_3.gif
+    - assets/images/Tileset_Stones_32x32.png
+    - assets/images/221.png
+    - assets/images/227.png
+    - assets/images/bg_betting.png
+    - assets/images/shadow.png
+    - assets/images/tilemap_cliff.png
+    - assets/images/Warrior_Idle.png
