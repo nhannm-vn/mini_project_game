@@ -34,6 +34,7 @@ class _RaceScreenState extends State<RaceScreen>
   late List<double> _positions;
   bool _isRacing = false;
   bool _isFinished = false;
+  bool _isSpeedUp = false; // Trạng thái x2 tốc độ
   Timer? _raceTimer;
   final Random _random = Random();
   late AnimationController _bounceController;
@@ -58,6 +59,17 @@ class _RaceScreenState extends State<RaceScreen>
     super.dispose();
   }
 
+  void _toggleSpeed() {
+    SoundService.playClick();
+    setState(() {
+      _isSpeedUp = !_isSpeedUp;
+      // Tăng nhịp nhún khán giả tương ứng khi x2
+      _bounceController.duration =
+          Duration(milliseconds: _isSpeedUp ? 180 : 350);
+      _bounceController.repeat(reverse: true);
+    });
+  }
+
   void _startRace() {
     if (_isRacing || _isFinished) return;
 
@@ -77,13 +89,14 @@ class _RaceScreenState extends State<RaceScreen>
       bool someoneWon = false;
       int winnerIndex = -1;
 
+      // Hệ số nhân tốc độ: 1x hoặc 2x
+      final double multiplier = _isSpeedUp ? 2.0 : 1.0;
+
       setState(() {
         for (int i = 0; i < widget.racers.length; i++) {
-          // Tốc độ chạy mượt mà, hồi hộp kéo dài 5-6 giây
-          final double step = _random.nextDouble() * 0.007 + 0.0035;
-          _positions[i] += step;
+          final double baseStep = _random.nextDouble() * 0.007 + 0.0035;
+          _positions[i] += baseStep * multiplier;
 
-          // Nhân vật chạy vượt qua vạch đích một đoạn (đạt 0.98) mới phân định chiến thắng
           if (_positions[i] >= _finishLinePosition) {
             _positions[i] = _finishLinePosition;
             someoneWon = true;
@@ -151,7 +164,7 @@ class _RaceScreenState extends State<RaceScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
           child: Column(
             children: [
-              // 1. THANH TIÊU ĐỀ
+              // 1. THANH TIÊU ĐỀ KÈM NÚT TỐC ĐỘ x2
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -188,7 +201,47 @@ class _RaceScreenState extends State<RaceScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  // NÚT CHUYỂN TỐC ĐỘ 1X / 2X
+                  GestureDetector(
+                    onTap: _isFinished ? null : _toggleSpeed,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _isSpeedUp
+                            ? DarkFantasyTheme.bloodRed.withValues(alpha: 0.3)
+                            : Colors.black54,
+                        border: Border.all(
+                          color: _isSpeedUp
+                              ? DarkFantasyTheme.bloodRed
+                              : DarkFantasyTheme.gold,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.fast_forward,
+                            size: 16,
+                            color: _isSpeedUp
+                                ? Colors.redAccent
+                                : DarkFantasyTheme.gold,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _isSpeedUp ? "2x" : "1x",
+                            style: TextStyle(
+                              color: _isSpeedUp
+                                  ? Colors.redAccent
+                                  : DarkFantasyTheme.gold,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -220,11 +273,13 @@ class _RaceScreenState extends State<RaceScreen>
                     ),
                     Text(
                       _isRacing
-                          ? "TRANH ĐẤU NẢY LỬA!"
+                          ? (_isSpeedUp ? "TĂNG TỐC 2X!" : "TRANH ĐẤU NẢY LỬA!")
                           : (_isFinished ? "KẾT THÚC!" : "CHUẨN BỊ"),
                       style: TextStyle(
                         color: _isRacing
-                            ? Colors.greenAccent
+                            ? (_isSpeedUp
+                                ? Colors.redAccent
+                                : Colors.greenAccent)
                             : DarkFantasyTheme.gold,
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
@@ -259,7 +314,6 @@ class _RaceScreenState extends State<RaceScreen>
                     final bool hasBet =
                         bet != null && bet.isSelected && bet.amount > 0;
 
-                    // Tiến độ phần trăm chuẩn
                     final int percent = ((progress / _finishLinePosition) * 100)
                         .clamp(0, 100)
                         .toInt();
@@ -285,7 +339,6 @@ class _RaceScreenState extends State<RaceScreen>
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            // NỀN VÁCH ĐÁ & CỎ RÊU 2.5D
                             const Positioned.fill(
                               child: IslandTrackFloor(),
                             ),
@@ -294,8 +347,7 @@ class _RaceScreenState extends State<RaceScreen>
                             Positioned(
                               top: 2,
                               left: 65,
-                              right:
-                                  90, // Thu gọn khán giả để chừa vạch đích thoáng mắt
+                              right: 90,
                               child: AnimatedBuilder(
                                 animation: _bounceController,
                                 builder: (context, child) {
@@ -343,7 +395,7 @@ class _RaceScreenState extends State<RaceScreen>
                               ),
                             ),
 
-                            // VẠCH KẺ ĐÍCH SỌC ĐỎ - VÀNG CÁCH MÉP PHẢI 1 KHOẢNG (right: 75)
+                            // VẠCH KẺ ĐÍCH SỌC ĐỎ - VÀNG
                             Positioned(
                               right: 75,
                               top: 0,
@@ -372,7 +424,7 @@ class _RaceScreenState extends State<RaceScreen>
                               ),
                             ),
 
-                            // CỜ VẠCH ĐÍCH (GARGOYLE) ĐẶT NGAY TRÊN VẠCH KẺ ĐÍCH
+                            // CỜ VẠCH ĐÍCH (GARGOYLE)
                             Positioned(
                               right: 62,
                               top: 10,
@@ -389,7 +441,7 @@ class _RaceScreenState extends State<RaceScreen>
                               ),
                             ),
 
-                            // ĐẤU SĨ: CHẠY QUA CỜ (right: 62) VÀ LAO THẲNG VỀ GÓC PHẢI
+                            // ĐẤU SĨ + BÓNG ĐỔ DẸT
                             Align(
                               alignment: FractionalOffset(progress, 0.62),
                               child: SizedBox(
@@ -399,7 +451,6 @@ class _RaceScreenState extends State<RaceScreen>
                                   clipBehavior: Clip.none,
                                   alignment: Alignment.center,
                                   children: [
-                                    // Bóng đổ elip dẹt sát chân
                                     Positioned(
                                       bottom: 2,
                                       child: Container(
@@ -414,8 +465,6 @@ class _RaceScreenState extends State<RaceScreen>
                                         ),
                                       ),
                                     ),
-
-                                    // Sprite nhân vật
                                     Positioned(
                                       bottom: 6,
                                       child: ControllableGifRacer(
@@ -452,7 +501,9 @@ class _RaceScreenState extends State<RaceScreen>
                   ),
                   child: Text(
                     _isRacing
-                        ? "CUỘC ĐUA ĐANG DIỄN RA..."
+                        ? (_isSpeedUp
+                            ? "ĐANG ĐUA (TỐC ĐỘ 2X)..."
+                            : "CUỘC ĐUA ĐANG DIỄN RA...")
                         : "START (XUẤT PHÁT)",
                     style: const TextStyle(
                       fontSize: 15,

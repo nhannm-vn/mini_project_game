@@ -84,9 +84,139 @@ class _LoginScreenState extends State<LoginScreen> {
       MaterialPageRoute(
         builder: (_) => BettingScreen(
           playerName: name,
-          balance: _startingBalance, // Truyền số vàng dựa theo chế độ
+          balance: _startingBalance,
         ),
       ),
+    );
+  }
+
+  // HỘP THOẠI HƯỚNG DẪN CÁCH CHƠI
+  void _showHowToPlayDialog() {
+    SoundService.playClick();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF140D21),
+        shape: const BeveledRectangleBorder(
+          side: BorderSide(color: DarkFantasyTheme.gold, width: 1.5),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.menu_book, color: DarkFantasyTheme.gold, size: 22),
+            SizedBox(width: 8),
+            Text(
+              "CẨM NANG ĐẤU TRƯỜNG",
+              style: TextStyle(
+                color: DarkFantasyTheme.gold,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildGuideItem(
+                step: "1",
+                title: "Chọn Độ Khó & Đặt Tên",
+                desc:
+                    "Khởi đầu với 1,000 Vàng (Dễ), 600 Vàng (Khó), hoặc 100 Vàng (Châu Á).",
+              ),
+              const SizedBox(height: 10),
+              _buildGuideItem(
+                step: "2",
+                title: "Đặt Cược Chiến Binh",
+                desc:
+                    "Có thể cược cùng lúc cho 1, 2 hoặc cả 3 đấu sĩ. Mỗi đấu sĩ có tỷ lệ trả thưởng (Odds) khác nhau.",
+              ),
+              const SizedBox(height: 10),
+              _buildGuideItem(
+                step: "3",
+                title: "Theo Dõi Cuộc Đua",
+                desc:
+                    "Nhấn START để mở màn chặng đua 2.5D. Đấu sĩ đầu tiên chạy đè qua vạch đích sẽ giành ngôi Quán quân.",
+              ),
+              const SizedBox(height: 10),
+              _buildGuideItem(
+                step: "4",
+                title: "Nhận Thưởng & Hồi Sinh",
+                desc:
+                    "Tính toán lãi/lỗ minh bạch. Nếu số dư dưới 50 Vàng, bạn sẽ được cứu trợ Hồi sinh nhận lại 1,000 Vàng!",
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              SoundService.playClick();
+              Navigator.pop(ctx);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: DarkFantasyTheme.gold,
+              side: const BorderSide(color: DarkFantasyTheme.goldDark),
+            ),
+            child: const Text(
+              "ĐÃ HIỂU",
+              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuideItem({
+    required String step,
+    required String title,
+    required String desc,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: DarkFantasyTheme.crimson,
+            border: Border.all(color: DarkFantasyTheme.gold),
+          ),
+          child: Text(
+            step,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: DarkFantasyTheme.gold,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                desc,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -169,12 +299,38 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: Stack(
               children: [
+                // NÚT HƯỚNG DẪN CÁCH CHƠI (?) Ở GÓC TRÊN BÊN TRÁI
+                Positioned(
+                  top: 10,
+                  left: 16,
+                  child: IconButton(
+                    onPressed: _showHowToPlayDialog,
+                    tooltip: "Hướng dẫn cách chơi",
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        border: Border.all(
+                          color: DarkFantasyTheme.gold,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.help_outline,
+                        color: DarkFantasyTheme.gold,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+
                 // NÚT BẬT / TẮT ÂM THANH Ở GÓC TRÊN BÊN PHẢI
                 Positioned(
                   top: 10,
                   right: 16,
                   child: IconButton(
                     onPressed: () {
+                      SoundService.playClick();
                       setState(() {
                         SoundService.toggleMute();
                       });
